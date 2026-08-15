@@ -59,15 +59,15 @@
     </message>
     <message>
     <source>Converter To JPEG
-Version: 1.1.0
+Version: 1.1.1
 Converting images to JPEG
 Supports HEIC, WEBP, AVIF
-by Mustere's solutions 2025</source>
+by Mustere's solutions 2026</source>
     <translation>Конвертер в JPEG
-Версия: 1.1.0
+Версия: 1.1.1
 Преобразование изображений в JPEG
 Поддержка HEIC, WEBP, AVIF
-by Mustere's solutions 2025</translation>
+by Mustere's solutions 2026</translation>
 </message>
     <message>
         <source>Start Conversion</source>

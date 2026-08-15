@@ -58,7 +58,7 @@ void MainWindow::on_browseSourceButton_clicked()
         this,
         tr("Select File(s) or Cancel to choose folder"),
         QString(),
-        tr("Images (*.heic *.heif *.webp *.HEIC *.HEIF *.WEBP *.avif *.AVIF)")
+        tr("Images (*.heic *.heif *.webp *.png *.jpg *.jpeg *.bmp *.gif *.tif *.tiff *.avif *.HEIC *.HEIF *.WEBP *.PNG *.JPG *.JPEG *.BMP *.GIF *.TIF *.TIFF *.AVIF)")
         );
 
     if(!selectedFiles.isEmpty()) {
@@ -134,7 +134,8 @@ void MainWindow::on_startButton_clicked() {
         sourceDir = first.absoluteFilePath();
         QDir dir(sourceDir);
         files = dir.entryList(
-            {"*.heic","*.heif","*.webp","*.HEIC","*.HEIF","*.WEBP","*.avif","*.AVIF"},
+            {"*.heic","*.heif","*.webp","*.png","*.jpg","*.jpeg","*.bmp","*.gif","*.tif","*.tiff","*.avif",
+             "*.HEIC","*.HEIF","*.WEBP","*.PNG","*.JPG","*.JPEG","*.BMP","*.GIF","*.TIF","*.TIFF","*.AVIF"},
             QDir::Files
             );
         // делаем пути абсолютными

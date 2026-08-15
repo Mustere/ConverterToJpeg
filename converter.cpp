@@ -1,6 +1,7 @@
 #include "converter.h"
 #include <libheif/heif.h>
 #include <QImage>
+#include <QColorSpace>
 #include <QFile>
 #include <QDebug>
 
@@ -15,7 +16,7 @@ bool HeicConverter::convertFile(const QString &inputFile, const QString &outputF
         return false;
     }
 
-    QByteArray header = f.peek(12);
+    QByteArray header = f.peek(32);
     f.close();
 
     // ------------------------------------------------------------------
@@ -29,13 +30,14 @@ bool HeicConverter::convertFile(const QString &inputFile, const QString &outputF
             qWarning() << "Failed to load JPEG with QImage:" << inputFile;
             return false;
         }
+        img.setColorSpace(QColorSpace::SRgb);
         return img.save(outputFile, "JPEG", quality);
     }
 
     // ------------------------------------------------------------------
     // WEBP (RIFF....WEBP)
     // ------------------------------------------------------------------
-    if (header.startsWith("RIFF") && header.mid(8, 4) == "WEBP") {
+    if (header.startsWith("RIFF") && header.size() >= 12 && header.mid(8, 4) == "WEBP") {
         qDebug() << "File is WEBP, converting via QImage:" << inputFile;
 
         QImage img;
@@ -43,12 +45,37 @@ bool HeicConverter::convertFile(const QString &inputFile, const QString &outputF
             qWarning() << "Failed to load WEBP with QImage:" << inputFile;
             return false;
         }
+        img.setColorSpace(QColorSpace::SRgb);
         return img.save(outputFile, "JPEG", quality);
     }
 
     // ------------------------------------------------------------------
-    // HEIC / HEIF (через libheif)
+    // PNG
     // ------------------------------------------------------------------
+    if (header.startsWith("\x89PNG\r\n\x1a\n")) {
+        qDebug() << "File is PNG, converting via QImage:" << inputFile;
+
+        QImage img;
+        if (!img.load(inputFile)) {
+            qWarning() << "Failed to load PNG with QImage:" << inputFile;
+            return false;
+        }
+        img.setColorSpace(QColorSpace::SRgb);
+        return img.save(outputFile, "JPEG", quality);
+    }
+
+    // ------------------------------------------------------------------
+    // HEIC / HEIF / AVIF (через libheif)
+    // ------------------------------------------------------------------
+    if ((header.startsWith("ftyp") || (header.size() >= 12 && header.mid(4, 4) == "ftyp"))) {
+        const QByteArray ftyp = header.mid(4, 8).toLower();
+        if (ftyp.contains("heic") || ftyp.contains("heix") || ftyp.contains("heim") ||
+            ftyp.contains("heis") || ftyp.contains("hevs") || ftyp.contains("hevm") ||
+            ftyp.contains("mif1") || ftyp.contains("avis") || ftyp.contains("avif")) {
+            qDebug() << "File is HEIC/HEIF/AVIF, converting via libheif:" << inputFile;
+        }
+    }
+
     heif_context* ctx = heif_context_alloc();
     if (!ctx) {
         qWarning() << "Failed to allocate heif_context.";

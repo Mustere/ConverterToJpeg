@@ -1,0 +1,61 @@
+# Build artifacts
+build/
+*/build/
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.exe
+*.out
+*.a
+*.lib
+
+# Qt / qmake generated files
+*.pro.user
+*.pro.user.*
+*.autosave
+*.stash
+moc_*
+ui_*
+qrc_*
+Makefile
+Makefile.*
+*.qm
+*.qmlc
+*.jsc
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local runtime / caches
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# Compiled binaries
+ConverterToJPEG
+*.app
+
+# Generated outputs
+output/
+out/
+results/
+JPEG/
+
+# Python scratch files
+__pycache__/
+*.pyc
+*.pyo
+
+# OS-specific
+.Trashes
+._*

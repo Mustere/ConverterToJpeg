@@ -12,6 +12,7 @@
 #include <QObject>
 #include <QStringList>
 #include <QImage>
+#include <QColorSpace>
 #include <QFileInfo>
 #include <QDir>
 #include <QImageReader>
@@ -71,14 +72,72 @@ signals:
     void finished();
 
 private:
+    static QByteArray readFileHeader(const QString &filePath) {
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly))
+            return {};
+
+        const QByteArray header = file.read(32);
+        file.close();
+        return header;
+    }
+
+    static QString detectImageFormat(const QString &filePath) {
+        const QByteArray header = readFileHeader(filePath);
+        if (header.isEmpty())
+            return {};
+
+        if (header.startsWith("\xFF\xD8\xFF"))
+            return "jpeg";
+
+        if (header.startsWith("RIFF") && header.size() >= 12 && header.mid(8, 4) == "WEBP")
+            return "webp";
+
+        if (header.startsWith("\x89PNG\r\n\x1a\n"))
+            return "png";
+
+        if (header.startsWith("GIF8"))
+            return "gif";
+
+        if (header.startsWith("II*\x00") || header.startsWith("MM\x00*"))
+            return "tiff";
+
+        if ((header.startsWith("ftyp") || (header.size() >= 12 && header.mid(4, 4) == "ftyp"))) {
+            const QByteArray ftyp = header.mid(4, 8).toLower();
+            if (ftyp.contains("heic") || ftyp.contains("heix") || ftyp.contains("heim") ||
+                ftyp.contains("heis") || ftyp.contains("hevs") || ftyp.contains("hevm") ||
+                ftyp.contains("mif1") || ftyp.contains("avis") || ftyp.contains("avif")) {
+                return "heic";
+            }
+        }
+
+        QImageReader probe(filePath);
+        const QString format = probe.format();
+        return format.isEmpty() ? QString() : format.toLower();
+    }
+
     bool convertToJpeg(const QString &filePath) {
         QFileInfo fi(filePath);
         if (!fi.exists())
             return false;
 
+        const QString detectedFormat = detectImageFormat(filePath);
         const QString ext = fi.suffix().toLower();
 
-        // 🔹 1. Сначала Qt (быстро + EXIF)
+        if (detectedFormat == "heic" || detectedFormat == "heif" || detectedFormat == "avif") {
+            return convertWithLibheif(filePath, fi);
+        }
+
+        if (!detectedFormat.isEmpty() && detectedFormat != "jpeg") {
+            QImageReader reader(filePath);
+            reader.setAutoTransform(true);
+            QImage image = reader.read();
+            if (!image.isNull()) {
+                return saveJpeg(image, fi);
+            }
+        }
+
+        // 🔹 fallback for standard Qt-supported image types
         if (ext != "avif") {
             QImageReader reader(filePath);
             reader.setAutoTransform(true);
@@ -88,7 +147,7 @@ private:
             }
         }
 
-        // 🔹 2. fallback через libheif (HEIC / HEIF / AVIF)
+        // 🔹 fallback through libheif (HEIC / HEIF / AVIF)
         if (ext == "heic" || ext == "heif" || ext == "avif") {
             return convertWithLibheif(filePath, fi);
         }
@@ -150,6 +209,7 @@ private:
         for (int y = 0; y < height; ++y) {
             memcpy(image.scanLine(y), src + y * stride, width * 3);
         }
+        image.setColorSpace(QColorSpace::SRgb);
 
         bool ok = saveJpeg(image, fi);
 
@@ -164,9 +224,16 @@ private:
         QString outFile =
             QDir(m_destDir).absoluteFilePath(fi.completeBaseName() + ".jpg");
 
+        QImage imageForSave = image;
+        if (imageForSave.colorSpace().isValid()) {
+            imageForSave.setColorSpace(QColorSpace(QColorSpace::SRgb));
+        } else {
+            imageForSave.setColorSpace(QColorSpace::SRgb);
+        }
+
         QImageWriter writer(outFile, "JPG");
         writer.setQuality(m_quality);
-        return writer.write(image);
+        return writer.write(imageForSave);
     }
 
 private:
