@@ -232,6 +232,6 @@ void MainWindow::showAboutDialog() {
     QMessageBox::about(
         this,
         tr("About"),
-        tr("Converter To JPEG\nVersion: 1.1.0\nConverting images to JPEG\nSupports HEIC, WEBP, AVIF\nby Mustere's solutions 2025")
+        tr("Converter To JPEG\nVersion: 1.1.1\nConverting images to JPEG\nSupports HEIC, WEBP, AVIF\nby Mustere's solutions 2026")
         );
 }
